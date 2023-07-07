@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}ツイート{% endblock title %}
+{% block content %}
+{% if parent_post %}
+    <div class="row mt-2 border">
+        <div style="width: 100px;" class="col-2 my-1">
+            {% if parent_post.author.icon %}
+                <img class="align-self-center img-thumbnail img-fluid" src="{{ parent_post.author.icon.url }}">
+            {% else %}
+                <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+            {% endif %}
+        </div>
+        <div class="col my-1">
+            <h4 class=""><a class="text-dark" href={% url 'accounts:profile' parent_post.author.username %}>@{{ parent_post.author }}</a></h4>
+            <p class="small text-break">
+                {{ parent_post.content | linebreaksbr | urlize }}
+            </p>
+            {% if parent_post.repost_parent %}
+                <div class="row my-2 border">
+                    <div style="width: 100px;" class="col-2 my-1">
+                        <a href={% url 'accounts:profile' parent_post.repost_parent.author.username %}>
+                            {% if parent_post.repost_parent.author.icon %}
+                                <img class="align-self-center img-thumbnail img-fluid" src="{{ parent_post.repost_parent.author.icon.url }}">
+                            {% else %}
+                                <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="col my-1">
+                        <h4 class=""><a class="text-dark" href={% url 'accounts:profile' parent_post.repost_parent.author.username %}>@{{ parent_post.repost_parent.author }}</a></h4>
+                        <p class="small text-break">
+                            {{ parent_post.repost_parent.content | linebreaksbr | urlize }}
+                        </p>
+                    </div>
+                    <a href="{% url "post:status" parent_post.repost_parent.pk %}" class="d-inline-block text-muted ms-2">
+                        <h6 class="">{{ parent_post.repost_parent.created_at }}</h6>
+                    </a>
+                </div>
+            {% endif %}
+            <a href="{% url "post:reply" parent_post.pk %}" class="d-inline-block">
+                <button type="button" class="btn btn-primary btn-sm">返信{% if parent_reply_count %}  {{ parent_reply_count }}{% endif %}</button>
+            </a>
+            <a href="{% url "post:repost" parent_post.pk %}" class="d-inline-block">
+                <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if parent_repost_count %} {{ parent_repost_count }}{% endif %}</button>
+            </a>
+            <a href="{% url "post:favorite" parent_post.pk %}" class="d-inline-block">
+            {% if parent_liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
+                ☆いいね{% if parent_likes %} {{ parent_likes }}{% endif %}
+            </button>
+            </a>
+            {% if parent_post.author == request.user %}
+                <a href="{% url "post:delete" parent_post.pk %}" class="d-inline-block">
+                    <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
+                </a>
+            {% endif %}
+            <a href="{% url "post:status" parent_post.pk %}" class="d-inline-block text-muted ms-2">
+                <h6 class="">{{ parent_post.created_at }}</h6>
+            </a>
+        </div>
+    </div>
+{% endif %}
+<div class="row mt-2 border">
+    <div style="width: 100px;" class="col-2 my-1">
+        {% if post.author.icon %}
+            <img class="align-self-center img-thumbnail img-fluid" src="{{ post.author.icon.url }}">
+        {% else %}
+            <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+        {% endif %}
+    </div>
+    <div class="col my-1 d-flex align-items-center">
+        <h2 class=""><a class="text-dark" href={% url 'accounts:profile' post.author.username %}>@{{ post.author }}</a></h2>
+    </div>
+    <div class="my-1">
+        <h3 class="text-break mb-3">
+            {{ post.content | linebreaksbr | urlize }}
+        </h3>
+        {% if post.repost_parent %}
+            <div class="row my-2 border">
+                <div style="width: 100px;" class="col-2 my-1">
+                    <a href={% url 'accounts:profile' post.repost_parent.author.username %}>
+                        {% if post.repost_parent.author.icon %}
+                            <img class="align-self-center img-thumbnail img-fluid" src="{{ post.repost_parent.author.icon.url }}">
+                        {% else %}
+                            <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+                        {% endif %}
+                    </a>
+                </div>
+                <div class="col my-1">
+                    <h4 class=""><a class="text-dark" href={% url 'accounts:profile' post.repost_parent.author.username %}>@{{ post.repost_parent.author }}</a></h4>
+                    <p class="text-break">
+                        {{ post.repost_parent.content | linebreaksbr | urlize }}
+                    </p>
+                    <a href="{% url "post:status" post.repost_parent.pk %}" class="d-inline-block text-muted ms-2">
+                        <h6 class="">{{ post.repost_parent.created_at }}</h6>
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+        <a href="{% url "post:reply" post.pk %}" class="d-inline-block">
+            <button type="button" class="btn btn-primary btn-sm">返信{% if reply_count %}  {{ reply_count }}{% endif %}</button>
+        </a>
+        <a href="{% url "post:repost" post.pk %}" class="d-inline-block">
+            <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if repost_count %} {{ repost_count }}{% endif %}</button>
+        </a>
+        <a href="{% url "post:favorite" post.pk %}" class="d-inline-block">
+            {% if liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
+                ☆いいね{% if likes %} {{ likes }}{% endif %}
+            </button>
+        </a>
+        {% if post.author == request.user %}
+            <a href="{% url "post:delete" post.pk %}" class="d-inline-block">
+                <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
+            </a>
+        {% endif %}
+        <a href="{% url "post:status" post.pk %}" class="d-inline-block text-muted ms-2">
+            <h6 class="">{{ post.created_at }}</h6>
+        </a>
+    </div>
+    {% if likes %}
+        <div class="my-1">
+            <a href="{% url "post:favorited" post.pk %}" class="text-dark d-inline-block ms-2">
+                <h6 class="">{{ likes }}件のいいね</h6>
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% for reply, liked in zip %}
+    {% if forloop.first %}
+        <div style="width: 95%;" class="ms-auto mt-3">
+         <p>このツイートへの返信とリツイート一覧</p>
+    {% endif %}
+    <div class="row ms-auto mt-2 border">
+        <div style="width: 100px;" class="col-2 my-1">
+            <a href={% url 'accounts:profile' reply.author.username %}>
+                {% if reply.author.icon %}
+                    <img class="align-self-center img-thumbnail img-fluid" src="{{ reply.author.icon.url }}">
+                {% else %}
+                    <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+                {% endif %}
+            </a>
+        </div>
+        <div class="col my-1">
+            <h4 class=""><a class="text-dark" href={% url 'accounts:profile' reply.author.username %}>@{{ reply.author }}</a></h4>
+            <p class="text-break">
+                {{ reply.content | linebreaksbr | urlize }}
+            </p>
+            {% if reply.repost_parent %}
+                <div class="row my-2 border">
+                    <div style="width: 100px;" class="col-2 my-1">
+                        <a href={% url 'accounts:profile' reply.repost_parent.author.username %}>
+                            {% if reply.repost_parent.author.icon %}
+                                <img class="align-self-center img-thumbnail img-fluid" src="{{ reply.repost_parent.author.icon.url }}">
+                            {% else %}
+                                <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+                            {% endif %}
+                        </a>
+                    </div>
+                    <div class="col my-1">
+                        <h4 class=""><a class="text-dark" href={% url 'accounts:profile' reply.repost_parent.author.username %}>@{{ reply.repost_parent.author }}</a></h4>
+                        <p class="text-break">
+                            {{ reply.repost_parent.content | linebreaksbr | urlize }}
+                        </p>
+                        <a href="{% url "post:status" reply.repost_parent.pk %}" class="d-inline-block text-muted ms-2">
+                            <h6 class="">{{ reply.repost_parent.created_at }}</h6>
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+            <a href="{% url "post:reply" reply.pk %}" class="d-inline-block">
+                <button type="button" class="btn btn-primary btn-sm">返信{% if reply.reply_count %}  {{ reply.reply_count }}{% endif %}</button>
+            </a>
+            <a href="{% url "post:repost" reply.pk %}" class="d-inline-block">
+                <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if reply.repost_count %} {{ reply.repost_count }}{% endif %}</button>
+            </a>
+            <a href="{% url "post:favorite" reply.pk %}" class="d-inline-block">
+                {% if liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
+                    ☆いいね{% if reply.liked_count %} {{ reply.liked_count }}{% endif %}
+                </button>
+            </a>
+            {% if reply.author == request.user %}
+                <a href="{% url "post:delete" reply.pk %}" class="d-inline-block">
+                    <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
+                </a>
+            {% endif %}
+            <a href="{% url "post:status" reply.pk %}" class="d-inline-block text-muted ms-2">
+                <h6 class="">{{ post.created_at }}</h6>
+            </a>
+        </div>
+    </div>
+    {% if forloop.last %}
+        </div>
+    {% endif %}
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}ユーザー情報の編集{% endblock title %}
+{% block content %}
+    <p>ユーザー情報の編集</p>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary btn-sm">変更</button>
+    </form>
+{% endblock %}

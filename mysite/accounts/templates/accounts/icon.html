@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}アイコンの編集{% endblock title %}
+{% block content %}
+    <p>アイコンの編集</p>
+    <form action="" method="POST" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.icon }}{{ form.icon.errors }}
+        <div class="mt-3" id="btn">
+            <button type="submit" class="btn btn-primary btn-sm">変更</button>
+        </div>
+    </form>
+{% endblock %}

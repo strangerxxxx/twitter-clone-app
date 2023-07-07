@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ description }}{% endblock title %}
+{% block content %}
+    {% if post %}
+        <div class="row mt-2 border">
+            <div style="width: 100px;" class="col-2 my-1">
+                {% if post.author.icon %}
+                    <img class="align-self-center img-thumbnail img-fluid" src="{{ post.author.icon.url }}">
+                {% else %}
+                    <img class="align-self-center img-thumbnail img-fluid" src="{% static 'images/user_icon.png' %}">
+                {% endif %}
+            </div>
+            <div class="col my-1">
+                <h4 class=""><a class="text-dark" href={% url 'accounts:profile' post.author.username %}>@{{ post.author }}</a></h4>
+                <p class="text-break">
+                    {{ post.content | linebreaksbr | urlize }}
+                </p>
+                <h6 class="d-inline-block text-muted ms-2">{{ post.created_at }}</h6>
+            </div>
+        </div>
+    {% endif %}
+    <p>{{ description }}</p>
+    <form action="" method="POST">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" id="submit" class="btn btn-primary btn-sm mt-2">Tweet</button>
+    </form>
+{% endblock %}
+
+{% block extra_js %}
+    <script type="text/javascript">
+        var q = document.getElementById('id_content');
+        var len = q.value.length;
+        q.focus();
+        q.setSelectionRange(len, len);
+    </script>
+{% endblock %}

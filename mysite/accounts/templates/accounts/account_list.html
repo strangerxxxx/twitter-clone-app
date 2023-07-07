@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ description }}{% endblock title %}
+
+{% block content %}
+    {% if request.user.is_authenticated  %}
+        {% if description %}
+            <h2>{{ description }}</h2>
+        {% endif %}
+        <div class="" id="users">
+            <form class="d-flex" action="" method="get" name="search">
+                <input class="form-control w-50" name="query" value="{{ request.GET.query }}" type="text" placeholder="ユーザー検索">
+                <button class="btn btn-outline-success w-10" type="submit">検索</button>
+            </form>
+            {% for user in user_list %}
+                <ul class="list-unstyled">
+                    <div class="row mt-2 border">
+                        <div style="width: 100px;" class="col-2 my-1">
+                            <a href={% url 'accounts:profile' user.username %}>
+                                {% if user.icon %}
+                                    <img class="align-self-center img-thumbnail" src="{{ user.icon.url }}" width="100" height="100">
+                                {% else %}
+                                    <img class="align-self-center img-thumbnail" src="{% static 'images/user_icon.png' %}" width="100" height="100">
+                                {% endif %}
+                            </a>
+                        </div>
+                        <div class="col my-1">
+                            <h4 class=""><a class="text-dark" href={% url 'accounts:profile' user.username %}>@{{ user }}</a></h4>
+                            <p class="text-break">
+                                {% if user.introduction %}
+                                    {{ user.introduction | linebreaksbr | urlize }}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div style="width: 150px;" class="col-2 my-1">
+                            <a href={% url 'accounts:profile' user.username %}>
+                                {% if user == request.user %}
+                                {% elif user in followings %}
+                                    <a href="{% url "accounts:remove" user.username %}" type="submit" class="btn btn-outline-primary" id="remove">フォロー解除</a>
+                                {% else %}
+                                    <a href="{% url "accounts:follow" user.username %}" type="submit" class="btn btn-primary" id="follow">フォローする</a>
+                                {% endif %}
+                            </a>
+                        </div>
+                    </div>
+                </ul>
+            {% empty %}
+                <h6 class="mt-2">ユーザーが見つかりませんでした</h6>
+            {% endfor %}
+        </div>
+    {% else %}
+        <h6>ようこそTwitter-cloneへ！<a href="{% url 'accounts:create' %}">アカウントを作成する</a>か<a href="{% url 'accounts:login' %}">ログイン</a>してください</h6>
+    {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+    <script type="text/javascript">
+        var q = document.search.query;
+        var len = q.value.length;
+        q.focus();
+        q.setSelectionRange(len, len);
+    </script>
+{% endblock %}
