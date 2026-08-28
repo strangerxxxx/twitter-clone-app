@@ -34,20 +34,25 @@
                             </p>
                         </div>
                         <div style="width: 150px;" class="col-2 my-1">
-                            <a href={% url 'accounts:profile' user.username %}>
-                                {% if user == request.user %}
-                                {% elif user in followings %}
-                                    <a href="{% url "accounts:remove" user.username %}" type="submit" class="btn btn-outline-primary" id="remove">フォロー解除</a>
-                                {% else %}
-                                    <a href="{% url "accounts:follow" user.username %}" type="submit" class="btn btn-primary" id="follow">フォローする</a>
-                                {% endif %}
-                            </a>
+                            {% if user == request.user %}
+                            {% elif user in followings %}
+                                <form method="post" action="{% url 'accounts:remove' user.username %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-primary" id="remove">フォロー解除</button>
+                                </form>
+                            {% else %}
+                                <form method="post" action="{% url 'accounts:follow' user.username %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary" id="follow">フォローする</button>
+                                </form>
+                            {% endif %}
                         </div>
                     </div>
                 </ul>
             {% empty %}
                 <h6 class="mt-2">ユーザーが見つかりませんでした</h6>
             {% endfor %}
+            {% include 'includes/pagination.html' %}
         </div>
     {% else %}
         <h6>ようこそTwitter-cloneへ！<a href="{% url 'accounts:create' %}">アカウントを作成する</a>か<a href="{% url 'accounts:login' %}">ログイン</a>してください</h6>

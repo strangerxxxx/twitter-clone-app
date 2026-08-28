@@ -14,3 +14,11 @@ class PostCreationForm(forms.ModelForm):
             field.widget.attrs['class'] = 'form-control'
             field.widget.attrs[
                 'onkeydown'] = "if(event.ctrlKey&&event.keyCode==13){document.getElementById('submit').click();return false};"
+
+    def clean_content(self):
+        content = self.cleaned_data['content'].strip()
+        if not content:
+            raise forms.ValidationError('ツイート内容を入力してください。')
+        if len(content) > 280:
+            raise forms.ValidationError('ツイートは280文字以内で入力してください。')
+        return content

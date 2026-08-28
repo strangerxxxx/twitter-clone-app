@@ -39,25 +39,7 @@
                     </a>
                 </div>
             {% endif %}
-            <a href="{% url "post:reply" parent_post.pk %}" class="d-inline-block">
-                <button type="button" class="btn btn-primary btn-sm">返信{% if parent_reply_count %}  {{ parent_reply_count }}{% endif %}</button>
-            </a>
-            <a href="{% url "post:repost" parent_post.pk %}" class="d-inline-block">
-                <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if parent_repost_count %} {{ parent_repost_count }}{% endif %}</button>
-            </a>
-            <a href="{% url "post:favorite" parent_post.pk %}" class="d-inline-block">
-            {% if parent_liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
-                ☆いいね{% if parent_likes %} {{ parent_likes }}{% endif %}
-            </button>
-            </a>
-            {% if parent_post.author == request.user %}
-                <a href="{% url "post:delete" parent_post.pk %}" class="d-inline-block">
-                    <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
-                </a>
-            {% endif %}
-            <a href="{% url "post:status" parent_post.pk %}" class="d-inline-block text-muted ms-2">
-                <h6 class="">{{ parent_post.created_at }}</h6>
-            </a>
+            {% include 'post/includes/post_actions.html' with post=parent_post liked=parent_liked %}
         </div>
     </div>
 {% endif %}
@@ -98,25 +80,7 @@
                 </div>
             </div>
         {% endif %}
-        <a href="{% url "post:reply" post.pk %}" class="d-inline-block">
-            <button type="button" class="btn btn-primary btn-sm">返信{% if reply_count %}  {{ reply_count }}{% endif %}</button>
-        </a>
-        <a href="{% url "post:repost" post.pk %}" class="d-inline-block">
-            <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if repost_count %} {{ repost_count }}{% endif %}</button>
-        </a>
-        <a href="{% url "post:favorite" post.pk %}" class="d-inline-block">
-            {% if liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
-                ☆いいね{% if likes %} {{ likes }}{% endif %}
-            </button>
-        </a>
-        {% if post.author == request.user %}
-            <a href="{% url "post:delete" post.pk %}" class="d-inline-block">
-                <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
-            </a>
-        {% endif %}
-        <a href="{% url "post:status" post.pk %}" class="d-inline-block text-muted ms-2">
-            <h6 class="">{{ post.created_at }}</h6>
-        </a>
+        {% include 'post/includes/post_actions.html' with post=post liked=liked %}
     </div>
     {% if likes %}
         <div class="my-1">
@@ -168,29 +132,12 @@
                     </div>
                 </div>
             {% endif %}
-            <a href="{% url "post:reply" reply.pk %}" class="d-inline-block">
-                <button type="button" class="btn btn-primary btn-sm">返信{% if reply.reply_count %}  {{ reply.reply_count }}{% endif %}</button>
-            </a>
-            <a href="{% url "post:repost" reply.pk %}" class="d-inline-block">
-                <button type="button" class="btn btn-outline-success btn-sm">リツイート{% if reply.repost_count %} {{ reply.repost_count }}{% endif %}</button>
-            </a>
-            <a href="{% url "post:favorite" reply.pk %}" class="d-inline-block">
-                {% if liked %}<button type="button" class="btn btn-warning btn-sm">{% else %}<button type="button" class="btn btn-outline-warning btn-sm">{% endif %}
-                    ☆いいね{% if reply.liked_count %} {{ reply.liked_count }}{% endif %}
-                </button>
-            </a>
-            {% if reply.author == request.user %}
-                <a href="{% url "post:delete" reply.pk %}" class="d-inline-block">
-                    <button type="button" class="btn btn-outline-danger btn-sm">削除</button>
-                </a>
-            {% endif %}
-            <a href="{% url "post:status" reply.pk %}" class="d-inline-block text-muted ms-2">
-                <h6 class="">{{ post.created_at }}</h6>
-            </a>
+            {% include 'post/includes/post_actions.html' with post=reply liked=liked %}
         </div>
     </div>
     {% if forloop.last %}
         </div>
     {% endif %}
 {% endfor %}
+{% include 'includes/pagination.html' with page_obj=reply_page_obj %}
 {% endblock %}

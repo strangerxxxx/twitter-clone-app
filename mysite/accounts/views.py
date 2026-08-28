@@ -1,16 +1,20 @@
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
-# Create your views here.
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, PasswordChangeView
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
 from django.views.generic.edit import FormView
-from django.views.generic import TemplateView, CreateView, ListView
+from django.views.generic import TemplateView, CreateView
 from django.urls import reverse_lazy
 from django.contrib.auth import get_user_model, login, authenticate
-from django.db.models import Count
+from django.conf import settings
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect, get_object_or_404
 
-from . import forms
 from post.models import Post
+from post.mixins import UserPaginatedListView
+from post.utils import get_post_queryset, zip_posts_with_liked_status, redirect_to_referer
+from . import forms
 from .forms import UpLoadProfileImgForm
 
 
@@ -26,9 +30,13 @@ class MyLoginView(LoginView):
 
 class MyLogoutView(LoginRequiredMixin, LogoutView):
     template_name = "accounts/logout.html"
+    http_method_names = ['get', 'post', 'options']
 
-    def dispatch(self, request, *args, **kwargs):
-        response = super().dispatch(request, *args, **kwargs)
+    def get(self, request, *args, **kwargs):
+        return self.render_to_response(self.get_context_data())
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
         messages.warning(request, 'ログアウトしました。')
         return response
 
@@ -57,7 +65,6 @@ class UserChangeView(LoginRequiredMixin, FormView):
     form_class = forms.UserChangeForm
 
     def form_valid(self, form):
-        # formのupdateメソッドにログインユーザーを渡して更新
         form.update(user=self.request.user)
         result = super().form_valid(form)
         messages.success(self.request, 'ユーザー情報を変更しました。')
@@ -65,7 +72,6 @@ class UserChangeView(LoginRequiredMixin, FormView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        # 更新前のユーザー情報をkwargsとして渡す
         kwargs.update({
             'username': self.request.user.username,
             'email': self.request.user.email,
@@ -94,66 +100,73 @@ def user_profile_view(request, username):
     user = get_object_or_404(get_user_model(), username=username)
     me = request.user
     followers = user.followers.all()
-    is_following = request.user in followers
+    is_following = me.is_authenticated and user.followers.filter(pk=me.pk).exists()
     follower_count = followers.count()
-    followings = user.following.all()
-    following_count = followings.count()
-    post_list = Post.objects.filter(
-        author__username=username).prefetch_related('liked_users').prefetch_related('replies').prefetch_related('reposted').order_by('-created_at').annotate(
-            liked_count=Count("liked_users")).annotate(reply_count=Count("replies")).annotate(repost_count=Count("reposted"))
-    liked = [None] * len(post_list)
-    for i, post in enumerate(post_list):
-        liked_users = post.liked_users
-        liked[i] = me in liked_users.all()
+    following_count = user.following.count()
+
+    post_queryset = get_post_queryset(Post.objects.filter(author=user))
+    paginator = Paginator(post_queryset, settings.POSTS_PER_PAGE)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    preserve_query = request.GET.copy()
+    preserve_query.pop('page', None)
+
     context = {
         'User': user,
-        'zip': zip(post_list, liked),
+        'zip': zip_posts_with_liked_status(me, page_obj),
+        'page_obj': page_obj,
+        'preserve_query': preserve_query,
         'is_following': is_following,
         'followers': followers,
         'follower_count': follower_count,
         'following_count': following_count,
     }
-    if request.method == 'POST':
-        pass
     return render(request, 'accounts/user_profile.html', context)
 
 
+@login_required
+@require_POST
 def remove_view(request, username):
     user = get_object_or_404(get_user_model(), username=username)
-    user.followers.remove(request.user)
-    user.save()
-    messages.warning(request, 'リムーブしました。')
-    return redirect(request.META['HTTP_REFERER'])
+    if user == request.user:
+        messages.error(request, '自分自身のフォローは解除できません。')
+    else:
+        user.followers.remove(request.user)
+        messages.warning(request, 'フォローを解除しました。')
+    return redirect_to_referer(request, 'accounts:profile', username)
 
 
+@login_required
+@require_POST
 def follow_view(request, username):
     user = get_object_or_404(get_user_model(), username=username)
-    user.followers.add(request.user)
-    user.save()
-    messages.success(request, 'フォローしました。')
-    return redirect(request.META['HTTP_REFERER'])
+    if user == request.user:
+        messages.error(request, '自分自身はフォローできません。')
+    else:
+        user.followers.add(request.user)
+        messages.success(request, 'フォローしました。')
+    return redirect_to_referer(request, 'accounts:profile', username)
 
 
+@login_required
 def edit_profile_icon(request):
     if request.method != 'POST':
         form = UpLoadProfileImgForm()
     else:
         form = UpLoadProfileImgForm(request.POST, request.FILES)
         if form.is_valid():
-            icon = form.cleaned_data['icon']
-            user = request.user
-            user.icon = icon
-            user.save()
+            request.user.icon = form.cleaned_data['icon']
+            request.user.save(update_fields=['icon'])
             messages.success(request, 'アイコンを変更しました。')
-            return redirect('accounts:profile', user.username)
+            return redirect('accounts:profile', request.user.username)
     context = {
         'form': form
     }
     return render(request, 'accounts/icon.html', context)
 
 
-class AccountsListView(LoginRequiredMixin, ListView):
+class AccountsListView(LoginRequiredMixin, UserPaginatedListView):
     template_name = 'accounts/account_list.html'
+    context_object_name = 'user_list'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -163,47 +176,47 @@ class AccountsListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         q_word = self.request.GET.get('query')
-        qs = get_user_model().objects.all()
+        queryset = get_user_model().objects.all()
         if q_word:
-            qs = qs.filter(username__contains=q_word)
-        return qs
+            queryset = queryset.filter(username__icontains=q_word)
+        return queryset
 
 
-class FollowingListView(LoginRequiredMixin, ListView):
+class FollowingListView(LoginRequiredMixin, UserPaginatedListView):
     template_name = 'accounts/account_list.html'
+    context_object_name = 'user_list'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['followings'] = self.request.user.following.all()
-        context['description'] = "@" + \
-            self.kwargs.get('username', "") + "さんのフォロー一覧"
+        context['description'] = "@" + self.kwargs.get('username', "") + "さんのフォロー一覧"
         return context
 
     def get_queryset(self):
         q_word = self.request.GET.get('query')
         username = self.kwargs.get('username')
-        qs = get_object_or_404(
+        queryset = get_object_or_404(
             get_user_model(), username=username).following.all()
         if q_word:
-            qs = qs.filter(username__contains=q_word)
-        return qs
+            queryset = queryset.filter(username__icontains=q_word)
+        return queryset
 
 
-class FollowerListView(LoginRequiredMixin, ListView):
+class FollowerListView(LoginRequiredMixin, UserPaginatedListView):
     template_name = 'accounts/account_list.html'
+    context_object_name = 'user_list'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['followings'] = self.request.user.following.all()
-        context['description'] = "@" + \
-            self.kwargs.get('username', "") + "さんのフォロワー一覧"
+        context['description'] = "@" + self.kwargs.get('username', "") + "さんのフォロワー一覧"
         return context
 
     def get_queryset(self):
         q_word = self.request.GET.get('query')
         username = self.kwargs.get('username', "")
-        qs = get_object_or_404(
+        queryset = get_object_or_404(
             get_user_model(), username=username).followers.all()
         if q_word:
-            qs = qs.filter(username__contains=q_word)
-        return qs
+            queryset = queryset.filter(username__icontains=q_word)
+        return queryset

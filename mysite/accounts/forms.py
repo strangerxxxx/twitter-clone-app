@@ -63,7 +63,8 @@ class UserChangeForm(ModelForm):
         if user.introduction != self.cleaned_data['introduction']:
             user.introduction = self.cleaned_data['introduction']
             fields.append('introduction')
-        user.save(update_fields=fields)
+        if fields:
+            user.save(update_fields=fields)
 
 
 class UserPasswordChangeForm(PasswordChangeForm):

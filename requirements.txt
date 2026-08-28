@@ -2,3 +2,4 @@ Django
 django-cleanup
 django_boost
 pillow
+python-dotenv

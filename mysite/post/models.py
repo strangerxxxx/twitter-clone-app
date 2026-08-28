@@ -17,5 +17,8 @@ class Post(models.Model):
     repost_parent = models.ForeignKey('self', blank=True, null=True, related_name='reposted',
                                       on_delete=models.SET_NULL)
 
+    class Meta:
+        ordering = ['-created_at']
+
     def __str__(self):
         return self.content
